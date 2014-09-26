@@ -1,0 +1,87 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+	<title>NASA Global Imagery Browse Services (GIBS) Leaflet plugin</title>
+	<meta charset="utf-8" />
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0px;
+        }
+        #controls {
+            position: absolute;
+			left: 54px;
+			top: 11px;
+			z-index: 1;
+			background-color: #ffffff;
+			border-radius: 5px;
+            box-shadow: 0 1px 7px rgba(0,0,0,0.65);
+        }
+        
+        #controls button {
+            border-radius: 5px;
+            
+        }
+        
+        #controls > div{
+            padding: 6px;
+        }
+    </style>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
+</head>
+<body>
+	<div id="controls">
+		<div>
+            <button id="prev">Prev day</button>
+            <button id="next">Next day</button>
+            <span id="timeInfo"></span>
+        </div>
+	</div>
+
+	<div id="map" style="width: 100%; height: 100%"></div>
+ 
+	<script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet-src.js"></script>
+	<script src="gibs.js"></script>
+	<script>
+		var map = L.map('map').setView([60, 50], 3);
+
+		var osm = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+			maxZoom: 18,
+			attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>'
+		}).addTo(map);
+		
+		var startDate = new Date('2014/09/26');
+		var oneDay = 1000*60*60*24, // milliseconds in one day
+            now = startDate.getTime(),
+            ddt1 = new Date(now); //beginning of the previous UTC day
+
+        var updateInfo = function(currentDate) {
+			var zz = function(x) { return x < 10 ? "0" + x : x}
+			var dateStr = zz(currentDate.getDate()) + '.' + zz(currentDate.getMonth() + 1) + '.' + zz(currentDate.getFullYear());
+			document.getElementById('timeInfo').innerHTML = dateStr;
+		}
+        
+        updateInfo(ddt1);
+                
+        var gibsLayer = new L.GIBSLayer('MODIS_Terra_CorrectedReflectance_Bands367', ddt1).addTo(map);
+            
+        L.control.layers(null, {
+            MODIS_Terra_CorrectedReflectance_Bands367: gibsLayer
+       }, {collapsed: false}).addTo(map);
+        
+        document.getElementById("prev").onclick = function() {
+            ddt1 = new Date(ddt1.getTime() - oneDay);
+            updateInfo(ddt1);
+            gibsLayer.setDate(ddt1);
+        }
+        
+        document.getElementById("next").onclick = function() {
+            ddt1 = new Date(ddt1.getTime() + oneDay);            
+            updateInfo(ddt1);
+            gibsLayer.setDate(ddt1);
+        }
+	</script>
+</body>
+</html>

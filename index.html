@@ -38,21 +38,27 @@
             <button id="next">Next day</button>
             <span id="timeInfo"></span>
         </div>
+        <div>
+            <label><input type = "checkbox" id = "black-areas">Hide black areas</label>
+        </div>
 	</div>
 
 	<div id="map" style="width: 100%; height: 100%"></div>
  
 	<script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet-src.js"></script>
+	<script src="http://mlevans.github.io/leaflet-hash/javascripts/leaflet-hash.js"></script>
 	<script src="gibs.js"></script>
 	<script>
 		var map = L.map('map').setView([60, 50], 3);
 
 		var osm = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
 			maxZoom: 18,
-			attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>'
+			attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a  href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>'
 		}).addTo(map);
+        
+        new L.Hash(map);
 		
-		var startDate = new Date('2014/09/26');
+		var startDate = new Date('2014/09/24');
 		var oneDay = 1000*60*60*24, // milliseconds in one day
             now = startDate.getTime(),
             ddt1 = new Date(now); //beginning of the previous UTC day
@@ -65,7 +71,7 @@
         
         updateInfo(ddt1);
                 
-        var gibsLayer = new L.GIBSLayer('MODIS_Terra_CorrectedReflectance_Bands367', ddt1).addTo(map);
+        var gibsLayer = new L.GIBSLayer('MODIS_Terra_CorrectedReflectance_Bands367', {date: ddt1}).addTo(map);
             
         L.control.layers(null, {
             MODIS_Terra_CorrectedReflectance_Bands367: gibsLayer
@@ -81,6 +87,10 @@
             ddt1 = new Date(ddt1.getTime() + oneDay);            
             updateInfo(ddt1);
             gibsLayer.setDate(ddt1);
+        }
+        
+        document.getElementById("black-areas").onchange = function() {
+            gibsLayer.hideBlackAreas(this.checked);
         }
 	</script>
 </body>

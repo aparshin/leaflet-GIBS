@@ -32,16 +32,26 @@
         };
 
     L.GIBSLayer = L.TileLayer.Canvas.extend({
-        initialize: function(layerName, date) {
+        options: {
+            hideBlackAreas: false
+        },
+        
+        initialize: function(layerName, options) {
             
             L.Util.setOptions(this, {async: true});
+            L.Util.setOptions(this, options);
             
-            this._date = date;
+            this._date = this.options.date || null;
             this._layerName = layerName;
         },
         
         setDate: function(newDate) {
             this._date = newDate;
+            this.redraw();
+        },
+        
+        hideBlackAreas: function(hide) {
+            this.options.hideBlackAreas = hide;
             this.redraw();
         },
         
@@ -52,11 +62,15 @@
             img.crossOrigin = "anonymous";
             img.src = url;
         },
-        
+                
         drawTile: function(canvas, tilePoint, zoom) {
-            var mainImg, 
-                maskImg, 
+            var mainImg,
+                maskImg,
                 _this = this;
+            
+            if (!this._date) {
+                return;
+            }
             
             var tryToProcess = function() {
                 if (mainImg && maskImg) {
@@ -76,10 +90,22 @@
                     var maskCtx = maskCanvas.getContext('2d');
                     maskCtx.drawImage(maskImg, 0, 0);
                     
-                    var maskData = maskCtx.getImageData(0, 0, 256, 256);
-                    for (var p = 0; p < maskData.data.length; p += 4) {
-                        if (maskData.data[p+3]) {
-                            mainData.data[p+3] = 0;
+                    var maskPixels = maskCtx.getImageData(0, 0, 256, 256).data,
+                        pixels = mainData.data;
+                    for (var p = 0; p < maskPixels.length; p += 4) {
+                        if (maskPixels[p+3]) {
+                            pixels[p+3] = 0;
+                        } else if (_this.options.hideBlackAreas) {
+                            //Because of some problems in no-data layer, sometimes some black blocks are still visible
+                            //Try to detect that areas and hide them.
+                            //Concrete detection is very simple: black pixel is inside the area, 
+                            //if one of its neighbour pixels is also black
+                            var isBlack = !pixels[p] && !pixels[p+1] && !pixels[p+2];
+                            var isPrevBlack = p > 0 && !pixels[p-4] && !pixels[p-3] && !pixels[p-2];
+                            var isNextBlack = p < maskPixels.length - 4 && !pixels[p+4] && !pixels[p+5] && !pixels[p+6];
+                            if (isBlack && (isPrevBlack || isNextBlack)) {
+                                pixels[p+3] = 0;
+                            }
                         }
                     }
                     

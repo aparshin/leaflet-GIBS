@@ -38,9 +38,6 @@
             <button id="next">Next day</button>
             <span id="timeInfo"></span>
         </div>
-        <div>
-            <label><input type = "checkbox" id = "black-areas">Hide black areas</label>
-        </div>
 	</div>
 
 	<div id="map" style="width: 100%; height: 100%"></div>
@@ -58,7 +55,7 @@
         
         new L.Hash(map);
 		
-		var startDate = new Date('2014/09/24');
+		var startDate = new Date('2015/04/06');
 		var oneDay = 1000*60*60*24, // milliseconds in one day
             now = startDate.getTime(),
             ddt1 = new Date(now); //beginning of the previous UTC day
@@ -71,10 +68,10 @@
         
         updateInfo(ddt1);
                 
-        var gibsLayer = new L.GIBSLayer('MODIS_Terra_CorrectedReflectance_Bands367', {date: ddt1}).addTo(map);
+        var gibsLayer = new L.GIBSLayer('MODIS_Aqua_CorrectedReflectance_TrueColor', {date: ddt1}).addTo(map);
             
         L.control.layers(null, {
-            MODIS_Terra_CorrectedReflectance_Bands367: gibsLayer
+            MODIS_Aqua_CorrectedReflectance_TrueColor: gibsLayer
        }, {collapsed: false}).addTo(map);
         
         document.getElementById("prev").onclick = function() {
@@ -87,10 +84,6 @@
             ddt1 = new Date(ddt1.getTime() + oneDay);            
             updateInfo(ddt1);
             gibsLayer.setDate(ddt1);
-        }
-        
-        document.getElementById("black-areas").onchange = function() {
-            gibsLayer.hideBlackAreas(this.checked);
         }
 	</script>
 </body>

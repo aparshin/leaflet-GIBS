@@ -1,0 +1,9 @@
+{
+    "name": "leaflet-gibs",
+    "version": "0.0.1",
+    "description": "Leaflet plugin to display NASA GIBS Imagery",
+    "devDependencies": {
+        "concat-stream": "~1.4.8",
+        "xml2js": "~0.4.6"
+    }
+}

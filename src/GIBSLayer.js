@@ -1,43 +1,54 @@
 ﻿(function() {
-    var s2 = function(num) { return num < 10 ? '0' + num : num; };
-                
-    var //NASA_URL_PREFIX = 'https://map1a.vis.earthdata.nasa.gov/wmts-webmerc/',
-        /*NASA_LAYERS = {
-            MODIS_Terra_CorrectedReflectance_TrueColor: [9, 'jpg', 'MODIS_Terra_Data_No_Data'],
-            MODIS_Terra_CorrectedReflectance_Bands721:  [9, 'jpg', 'MODIS_Terra_Data_No_Data'],
-            MODIS_Terra_CorrectedReflectance_Bands367:  [9, 'jpg', 'MODIS_Terra_Data_No_Data'],
-            MODIS_Aqua_CorrectedReflectance_TrueColor:  [9, 'jpg', 'MODIS_Aqua_Data_No_Data'],
-            MODIS_Aqua_CorrectedReflectance_Bands721:   [9, 'jpg', 'MODIS_Aqua_Data_No_Data'],
+    var s2 = function(num) { return num < 10 ? '0' + num : num; },
+        gibsAttribution = '<a href="https://earthdata.nasa.gov/gibs">NASA EOSDIS GIBS</a>';
+    
+    var getGibsURL = function(info, date, x, y, z) {
+        var dateStr = info.date ? date.getUTCFullYear() + '-' + s2(date.getUTCMonth() + 1) + '-' + s2(date.getUTCDate()) : "0";
+        
+        return L.Util.template(info.template, {
+            Time: dateStr,
+            TileMatrixSet: 'GoogleMapsCompatible_Level' + info.zoom,
+            TileMatrix: z,
+            TileRow: y,
+            TileCol: x
+        });
+    };
+    
+    var GIBSLayerImage = L.TileLayer.extend({
+        initialize: function(gibsID, options) {
+            this._layerInfo = L.GIBS_LAYERS[gibsID];
+            options = options || {};
+            options.maxZoom = this._layerInfo.zoom;
+            options.attribution = gibsAttribution;
+            this._date = options.date || null;
             
-            MODIS_Terra_SurfaceReflectance_Bands143: [8, 'jpg', 'MODIS_Terra_Data_No_Data'],
-            MODIS_Terra_SurfaceReflectance_Bands721: [8, 'jpg', 'MODIS_Terra_Data_No_Data'],
-            MODIS_Terra_SurfaceReflectance_Bands121: [9, 'jpg', 'MODIS_Terra_Data_No_Data'],
-            MODIS_Aqua_SurfaceReflectance_Bands143:  [8, 'jpg', 'MODIS_Aqua_Data_No_Data'],
-            MODIS_Aqua_SurfaceReflectance_Bands721:  [8, 'jpg', 'MODIS_Aqua_Data_No_Data'],
-            MODIS_Aqua_SurfaceReflectance_Bands121:  [9, 'jpg', 'MODIS_Aqua_Data_No_Data'],
+            L.Util.setOptions(this, options);
             
-            VIIRS_CityLights_2012: [8, 'jpg'],
-            
-            MODIS_Aqua_Data_No_Data: [9, 'png'],
-            MODIS_Terra_Data_No_Data: [9, 'png']
-        },*/
-        getGibsURL = function(layerName, date, x, y, z) {
-            
-            var layerParams = NASA_LAYERS[layerName] || [7, 'jpg'],
-                layerZoom = NASA_LAYERS[layerName][0],
-                tileExt = NASA_LAYERS[layerName][1];
-                
-            var s2 = function(num) { return num < 10 ? '0' + num : num; };
-            var dateStr = date.getFullYear() + '-' + s2(date.getMonth() + 1) + '-' + s2(date.getDate());
-                
-            return NASA_URL_PREFIX + layerName + '/default/' + dateStr + '/GoogleMapsCompatible_Level' + layerZoom + '/' +
-                      z + '/' + y + '/' + x + '.' + tileExt;
-        };
+            L.TileLayer.prototype.initialize.call(this, this._layerInfo.template, options);
+        },
+        
+        getTileUrl: function(tilePoint){
+            return getGibsURL(this._layerInfo, this._date, tilePoint.x, tilePoint.y, tilePoint.z);
+        },
+        
+        setDate: function(newDate) {
+            if (this._layerInfo.date) {
+                this._date = newDate;
+                this.redraw();
+            }
+            return this;
+        },
+        
+        setTransparent: function(isTransparent) { return this; } //to ensure the same methods for both classes
+    });
 
-    L.GIBSLayer = L.TileLayer.Canvas.extend({
+    var GIBSLayerCanvas = L.TileLayer.Canvas.extend({
         initialize: function(layerName, options) {
         
-            L.Util.setOptions(this, {async: true});
+            L.Util.setOptions(this, {
+                async: true,
+                attribution: gibsAttribution
+            });
             L.Util.setOptions(this, options);
             
             this._date = this.options.date || null;
@@ -51,28 +62,24 @@
             
             this._maskInfo = null;
             if (layerName.indexOf('Terra') !== -1) {
-                this._maskInfo = L.GIBS_LAYERS['MODIS_Terra_Data_No_Data'];
+                this._maskInfo = L.GIBS_MASKS['MODIS_Terra_Data_No_Data'];
             } else if (layerName.indexOf('Aqua') !== -1) {
-                this._maskInfo = L.GIBS_LAYERS['MODIS_Aqua_Data_No_Data'];
+                this._maskInfo = L.GIBS_MASKS['MODIS_Aqua_Data_No_Data'];
             }
         },
         
         setDate: function(newDate) {
-            this._date = newDate;
-            this.redraw();
+            if (this._layerInfo.date) {
+                this._date = newDate;
+                this.redraw();
+            }
+            return this;
         },
         
-        _getGibsURL: function(info, x, y, z) {
-            var date = this._date,
-                dateStr = date.getFullYear() + '-' + s2(date.getMonth() + 1) + '-' + s2(date.getDate());
-            
-            return L.Util.template(info.template, {
-                Time: dateStr,
-                TileMatrixSet: 'GoogleMapsCompatible_Level' + info.zoom,
-                TileMatrix: z,
-                TileRow: y,
-                TileCol: x
-            });
+        setTransparent: function(isTransparent) {
+            this.options.transparent = isTransparent;
+            this.redraw();
+            return this;
         },
         
         _loadImage: function(url, onLoaded, onError) {
@@ -84,7 +91,8 @@
         },
                 
         drawTile: function(canvas, tilePoint, zoom) {
-            var mainImg,
+            var hasMask = this._maskInfo && this.options.transparent,
+                mainImg,
                 maskImg,
                 _this = this;
             
@@ -92,9 +100,10 @@
                 return;
             }
             
+            
             var tryToProcess = function() {
-                if (mainImg && (maskImg || !_this._maskInfo)) {
-                    if (mainImg.width !== 256 || (_this._maskInfo && maskImg.width !== 256)) {
+                if (mainImg && (maskImg || !hasMask)) {
+                    if (mainImg.width !== 256 || (hasMask && maskImg.width !== 256)) {
                         _this.tileDrawn(canvas);
                         return;
                     }
@@ -102,7 +111,7 @@
                     var mainCtx = canvas.getContext('2d');
                     mainCtx.drawImage(mainImg, 0, 0);
                     
-                    if (_this._maskInfo) {
+                    if (hasMask) {
                         var mainData = mainCtx.getImageData(0, 0, 256, 256);
                         
                         var maskCanvas = document.createElement('canvas');
@@ -128,15 +137,15 @@
             
             this._adjustTilePoint(tilePoint);
             
-            var mainSrc = this._getGibsURL(this._layerInfo, tilePoint.x, tilePoint.y, zoom);
+            var mainSrc = getGibsURL(this._layerInfo, this._date, tilePoint.x, tilePoint.y, zoom);
             
             this._loadImage(mainSrc, function(img) {
                 mainImg = img;
                 tryToProcess();
             }, this.tileDrawn.bind(this, canvas));
             
-            if (this._maskInfo) {
-                var maskSrc = this._getGibsURL(this._maskInfo, tilePoint.x, tilePoint.y, zoom);
+            if (hasMask) {
+                var maskSrc = getGibsURL(this._maskInfo, this._date, tilePoint.x, tilePoint.y, zoom);
                 this._loadImage(maskSrc, function(img) {
                     maskImg = img;
                     tryToProcess();
@@ -144,4 +153,17 @@
             }
         }
     })
+    
+    L.GIBSLayer = function(gibsID, options) {
+        var layerInfo = L.GIBS_LAYERS[gibsID];
+            
+        if (!layerInfo) {
+            throw "Unknown GIBS layer name";
+        }
+        
+        var needMask = layerInfo.date && 'gibsTransparent' in options && /jpg$/.test(layerInfo.template) && 
+                (gibsID.indexOf('Terra') !== -1 || gibsID.indexOf('Aqua') !== -1);
+                
+        return needMask ? new GIBSLayerCanvas(gibsID, options) : new GIBSLayerImage(gibsID, options);
+    }
 })();

@@ -26,6 +26,12 @@
         #controls > div{
             padding: 6px;
         }
+        
+        .leaflet-control-layers {
+            height: 500px;
+            overflow-y: scroll;
+        }
+
     </style>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -68,23 +74,31 @@
         }
         
         updateInfo(ddt1);
-                
-        var gibsLayer = new L.GIBSLayer('MODIS_Aqua_CorrectedReflectance_TrueColor', {date: ddt1}).addTo(map);
-            
-        L.control.layers(null, {
-            MODIS_Aqua_CorrectedReflectance_TrueColor: gibsLayer
-       }, {collapsed: false}).addTo(map);
+        
+        var baseLayers = {};
+
+        for (var id in L.GIBS_LAYERS) {
+            baseLayers[id] = new L.GIBSLayer(id, {date: ddt1, gibsTransparent: true});
+        }
+        
+        L.control.layers(baseLayers, null, {collapsed: false}).addTo(map);
+        
+        baseLayers['MODIS_Aqua_CorrectedReflectance_TrueColor'].addTo(map);
         
         document.getElementById("prev").onclick = function() {
             ddt1 = new Date(ddt1.getTime() - oneDay);
             updateInfo(ddt1);
-            gibsLayer.setDate(ddt1);
+            for (var l in baseLayers) {
+                baseLayers[l].setDate(ddt1);
+            }
         }
         
         document.getElementById("next").onclick = function() {
             ddt1 = new Date(ddt1.getTime() + oneDay);            
             updateInfo(ddt1);
-            gibsLayer.setDate(ddt1);
+            for (var l in baseLayers) {
+                baseLayers[l].setDate(ddt1);
+            }
         }
     </script>
 </body>

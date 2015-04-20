@@ -39,7 +39,11 @@
             return this;
         },
         
-        setTransparent: function(isTransparent) { return this; } //to ensure the same methods for both classes
+        isTemporal: function() {
+            return this._layerInfo.date;
+        }
+        
+        //setTransparent: function(isTransparent) { return this; } //to ensure the same methods for both classes
     });
 
     var GIBSLayerCanvas = L.TileLayer.Canvas.extend({
@@ -78,7 +82,7 @@
         
         setTransparent: function(isTransparent) {
             this.options.transparent = isTransparent;
-            this.redraw();
+            this._map && this.redraw();
             return this;
         },
         
@@ -151,6 +155,10 @@
                     tryToProcess();
                 }, this.tileDrawn.bind(this, canvas));
             }
+        },
+        
+        isTemporal: function() {
+            return this._layerInfo.date;
         }
     })
     
@@ -161,7 +169,7 @@
             throw "Unknown GIBS layer name";
         }
         
-        var needMask = layerInfo.date && 'gibsTransparent' in options && /jpg$/.test(layerInfo.template) && 
+        var needMask = layerInfo.date && 'transparent' in options && /jpg$/.test(layerInfo.template) && 
                 (gibsID.indexOf('Terra') !== -1 || gibsID.indexOf('Aqua') !== -1);
                 
         return needMask ? new GIBSLayerCanvas(gibsID, options) : new GIBSLayerImage(gibsID, options);

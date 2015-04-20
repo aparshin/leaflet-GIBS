@@ -1,0 +1,40 @@
+html, body, #map {
+    height: 100%;
+    margin: 0px;
+}
+#controls {
+    position: absolute;
+    left: 54px;
+    top: 11px;
+    z-index: 1;
+    background-color: #ffffff;
+    border-radius: 5px;
+    box-shadow: 0 1px 7px rgba(0,0,0,0.65);
+    padding: 6px;
+}
+
+#controls button {
+    border-radius: 5px;
+    
+}
+
+#date {
+    width: 5em;
+}
+
+#transparent-container {
+    margin-top: 4px;
+}
+
+.ui-widget {
+    font-size: 0.8em;
+}
+
+.ui-datepicker { 
+    margin-left: -77px;
+}
+
+.leaflet-control-layers {
+    height: 500px;
+    overflow-y: scroll;
+}

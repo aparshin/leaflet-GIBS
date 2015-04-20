@@ -1,58 +1,44 @@
 ﻿<!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NASA Global Imagery Browse Services (GIBS) Leaflet plugin</title>
     <meta charset="utf-8" />
-    <style>
-        html, body {
-            height: 100%;
-            margin: 0px;
-        }
-        #controls {
-            position: absolute;
-            left: 54px;
-            top: 11px;
-            z-index: 1;
-            background-color: #ffffff;
-            border-radius: 5px;
-            box-shadow: 0 1px 7px rgba(0,0,0,0.65);
-        }
-        
-        #controls button {
-            border-radius: 5px;
-            
-        }
-        
-        #controls > div{
-            padding: 6px;
-        }
-        
-        .leaflet-control-layers {
-            height: 500px;
-            overflow-y: scroll;
-        }
-
-    </style>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css" />
+    <link rel="stylesheet" href="main.css" />
 </head>
 <body>
     <div id="controls">
-        <div>
-            <button id="prev">Prev day</button>
-            <button id="next">Next day</button>
-            <span id="timeInfo"></span>
+        <button id="prev">Prev day</button>
+        <input id="date">
+        <button id="next">Next day</button>
+        <div id="transparent-container">
+            <label>
+                <input id="transparent-checkbox" type="checkbox" checked>
+                Transparent no-data areas
+            </label>
         </div>
     </div>
 
-    <div id="map" style="width: 100%; height: 100%"></div>
+    <div id="map"></div>
  
+    <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script type="text/javascript" src="https://code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
     <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet-src.js"></script>
+    
     <script src="http://mlevans.github.io/leaflet-hash/javascripts/leaflet-hash.js"></script>
+    
     <script src="../src/GIBSLayer.js"></script>
     <script src="../src/GIBSMetadata.js"></script>
+    
     <script>
+        var DATE_FORMAT = 'dd.mm.yy';
+        var strToDateUTC = function(str) {
+            var date = $.datepicker.parseDate(DATE_FORMAT, str);
+            return new Date(date - date.getTimezoneOffset()*60*1000);
+        }
+        
         var map = L.map('map').setView([60, 50], 3);
 
         var osm = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
@@ -62,44 +48,60 @@
         
         new L.Hash(map);
         
-        var startDate = new Date('2015/04/06');
+        var $date = $('#date');
+        
+        var now = new Date();
         var oneDay = 1000*60*60*24, // milliseconds in one day
-            now = startDate.getTime(),
-            ddt1 = new Date(now); //beginning of the previous UTC day
+            startTimestamp = now.getTime() - oneDay + now.getTimezoneOffset()*60*1000,
+            startDate = new Date(startTimestamp); //previous day
+            
+        $date.val($.datepicker.formatDate(DATE_FORMAT, startDate));
 
-        var updateInfo = function(currentDate) {
-            var zz = function(x) { return x < 10 ? "0" + x : x}
-            var dateStr = zz(currentDate.getDate()) + '.' + zz(currentDate.getMonth() + 1) + '.' + zz(currentDate.getFullYear());
-            document.getElementById('timeInfo').innerHTML = dateStr;
-        }
-        
-        updateInfo(ddt1);
-        
         var baseLayers = {};
 
         for (var id in L.GIBS_LAYERS) {
-            baseLayers[id] = new L.GIBSLayer(id, {date: ddt1, gibsTransparent: true});
+            baseLayers[id] = new L.GIBSLayer(id, {date: startDate, transparent: true});
         }
         
         L.control.layers(baseLayers, null, {collapsed: false}).addTo(map);
         
         baseLayers['MODIS_Aqua_CorrectedReflectance_TrueColor'].addTo(map);
         
-        document.getElementById("prev").onclick = function() {
-            ddt1 = new Date(ddt1.getTime() - oneDay);
-            updateInfo(ddt1);
-            for (var l in baseLayers) {
-                baseLayers[l].setDate(ddt1);
-            }
+        $('.leaflet-control-layers').scrollTop(10000);
+        
+        var alterDate = function(delta) {
+            var date = $.datepicker.parseDate(DATE_FORMAT, $date.val());
+            
+            $date
+                .val($.datepicker.formatDate(DATE_FORMAT, new Date(date.valueOf() + delta * oneDay)))
+                .change();
         }
         
-        document.getElementById("next").onclick = function() {
-            ddt1 = new Date(ddt1.getTime() + oneDay);            
-            updateInfo(ddt1);
+        document.getElementById("prev").onclick = alterDate.bind(null, -1);
+        document.getElementById("next").onclick = alterDate.bind(null, 1);
+        
+        $date.datepicker({
+            dateFormat: DATE_FORMAT
+        }).change(function() {
+            var date = strToDateUTC(this.value);
             for (var l in baseLayers) {
-                baseLayers[l].setDate(ddt1);
+                baseLayers[l].setDate(date);
             }
-        }
+        });
+        
+        map.on('click', function() {
+            $date.datepicker('hide');
+        }).on('baselayerchange', function(event) {
+            $('#controls').toggle(event.layer.isTemporal());
+            $('#transparent-container').toggle(!!event.layer.setTransparent);
+        })
+        
+        $('#transparent-checkbox').change(function() {
+            for (var l in baseLayers) {
+                baseLayers[l].setTransparent && baseLayers[l].setTransparent(this.checked);
+            }
+        })
+        
     </script>
 </body>
 </html>

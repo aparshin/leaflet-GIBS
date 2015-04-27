@@ -34,7 +34,7 @@
         setDate: function(newDate) {
             if (this._layerInfo.date) {
                 this._date = newDate;
-                this.redraw();
+                this._map && this.redraw();
             }
             return this;
         },
@@ -75,7 +75,7 @@
         setDate: function(newDate) {
             if (this._layerInfo.date) {
                 this._date = newDate;
-                this.redraw();
+                this._map && this.redraw();
             }
             return this;
         },

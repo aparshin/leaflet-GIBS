@@ -3,6 +3,10 @@
         gibsAttribution = '<a href="https://earthdata.nasa.gov/gibs">NASA EOSDIS GIBS</a>';
     
     var getGibsURL = function(info, date, x, y, z) {
+        if (!date) {
+            return L.Util.emptyImageUrl;
+        }
+        
         var dateStr = info.date ? date.getUTCFullYear() + '-' + s2(date.getUTCMonth() + 1) + '-' + s2(date.getUTCDate()) : "0";
         
         return L.Util.template(info.template, {

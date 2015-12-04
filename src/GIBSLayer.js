@@ -173,6 +173,7 @@
             throw "Unknown GIBS layer name";
         }
         
+        options = options || {};
         var needMask = layerInfo.date && 'transparent' in options && /jpg$/.test(layerInfo.template) && 
                 (gibsID.indexOf('Terra') !== -1 || gibsID.indexOf('Aqua') !== -1);
                 

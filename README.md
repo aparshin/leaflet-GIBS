@@ -1,6 +1,6 @@
 ## Leaflet-GIBS
 
-Leaflet plugin for [NASA EOSDIS GIBS](https://earthdata.nasa.gov/gibs) imagery integration. [96 products](https://wiki.earthdata.nasa.gov/display/GIBS/GIBS+Available+Imagery+Products) are available. Date can be set dynamically for multi-temporal products. No-data pixels of MODIS Multiband Imagery can be made transparent.
+Leaflet plugin for [NASA EOSDIS GIBS](https://earthdata.nasa.gov/gibs) imagery integration. [154 products](https://wiki.earthdata.nasa.gov/display/GIBS/GIBS+Available+Imagery+Products) are available. Date can be set dynamically for multi-temporal products. No-data pixels of MODIS Multiband Imagery can be made transparent.
 
 ### Example
 First, include list of GIBS products and the plugin itself:

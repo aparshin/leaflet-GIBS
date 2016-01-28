@@ -38,4 +38,15 @@ if (L.gmx && L.gmx.addLayerClass) {
     L.gmx.addLayerClass('GIBS', GIBSProxyLayer);
 }
 
+window.gmxCore && gmxCore.addModule('GIBSVirtualLayer', {layerClass: GIBSProxyLayer}, {
+    init: function(module, path) {
+        if (!L.GIBSLayer) {
+            return $.when(
+                gmxCore.loadScript(path + 'GIBSLayer.js'),
+                gmxCore.loadScript(path + 'GIBSMetadata.js')
+            )
+        }
+    }
+});
+
 })();

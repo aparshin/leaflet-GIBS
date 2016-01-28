@@ -27,7 +27,14 @@ GIBSProxyLayer.prototype.initFromDescription = function(layerDescription) {
     }
 
     layer.setDateInterval = function(dateBegin, dateEnd) {
-        this.setDate(dateEnd);
+
+        //if dateEnd is exactly midnight, we show previous day iff dateBegin is not equal to dateEnd (next day otherwise)
+        var shift = 0;
+        if (dateEnd.valueOf() % (3600*1000*24) === 0) {
+            shift = dateBegin < dateEnd ? 1 : 0;
+        }
+
+        this.setDate(new Date(dateEnd - shift));
         return this;
     }
 

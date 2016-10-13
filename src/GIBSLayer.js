@@ -50,7 +50,7 @@
         //setTransparent: function(isTransparent) { return this; } //to ensure the same methods for both classes
     });
 
-    var GIBSLayerCanvas = L.TileLayer.Canvas.extend({
+    var GIBSLayerCanvas = L.GridLayer.extend({
         initialize: function(layerName, options) {
         
             L.Util.setOptions(this, {

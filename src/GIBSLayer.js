@@ -50,7 +50,12 @@
         //setTransparent: function(isTransparent) { return this; } //to ensure the same methods for both classes
     });
 
-    var GIBSLayerCanvas = L.GridLayer.extend({
+	// Feature check for earlier versions of Leaflet
+	var GIBSGridLayer;
+	if (typeof L.TileLayer.Canvas !== 'undefined') GIBSGridLayer = L.TileLayer.Canvas;
+	else GIBSGridLayer = L.GridLayer;
+		
+    var GIBSLayerCanvas = GIBSGridLayer.extend({
         initialize: function(layerName, options) {
         
             L.Util.setOptions(this, {

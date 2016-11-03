@@ -55,6 +55,7 @@
 	if (typeof L.TileLayer.Canvas !== 'undefined') GIBSGridLayer = L.TileLayer.Canvas;
 	else GIBSGridLayer = L.GridLayer;
 		
+	// This doesn't work (test with MODIS layers). Might be an issue with createTile() missing?
     var GIBSLayerCanvas = GIBSGridLayer.extend({
         initialize: function(layerName, options) {
         
@@ -102,7 +103,10 @@
             img.crossOrigin = "anonymous";
             img.src = url;
         },
-                
+        
+		
+		// drawTile is only used by Leaflet 0.7x
+		// It is replaced with createTile in Leaflet 1.x
         drawTile: function(canvas, tilePoint, zoom) {
             var hasMask = this._maskInfo && this.options.transparent,
                 mainImg,
@@ -166,6 +170,73 @@
             }
         },
         
+		// New in Leaflet 1.0
+		createTile: function(coords){
+            var hasMask = this._maskInfo && this.options.transparent,
+                mainImg,
+                maskImg,
+                _this = this;
+				
+			var tile = L.DomUtil.create('canvas', 'leaflet-tile');
+			
+			var size = this.getTileSize();
+			tile.width = size.x;
+			tile.height = size.y;			
+
+			if (!this._date) {
+                return tile;
+            }
+			
+			var tryToProcess = function(canvas) {
+                if (mainImg && (maskImg || !hasMask)) {
+                    if (mainImg.width !== canvas.width || (hasMask && maskImg.width !== canvas.width)) {
+                        return;
+                    }
+
+                    var mainCtx = canvas.getContext('2d');
+                    mainCtx.drawImage(mainImg, 0, 0);
+                    
+                    if (hasMask) {
+                        var mainData = mainCtx.getImageData(0, 0, canvas.width, canvas.height);
+                        
+                        var maskCanvas = document.createElement('canvas');
+                        maskCanvas.width = canvas.width;
+						maskCanvas.height = canvas.height;
+                        
+                        var maskCtx = maskCanvas.getContext('2d');
+                        maskCtx.drawImage(maskImg, 0, 0);
+                        
+                        var maskPixels = maskCtx.getImageData(0, 0, canvas.width, canvas.height).data,
+                            pixels = mainData.data;
+                        for (var p = 0; p < maskPixels.length; p += 4) {
+                            if (maskPixels[p+3]) {
+                                pixels[p+3] = 0;
+                            }
+                        }
+                        
+                        mainCtx.putImageData(mainData, 0, 0);
+                    }
+                }
+            }
+           
+			var mainSrc = getGibsURL(this._layerInfo, this._date, coords.x, coords.y, coords.z);
+            
+            this._loadImage(mainSrc, function(img) {
+                mainImg = img;
+                tryToProcess(tile);
+            });
+            
+            if (hasMask) {
+                var maskSrc = getGibsURL(this._maskInfo, this._date, coords.x, coords.y, coords.z);
+                this._loadImage(maskSrc, function(img) {
+                    maskImg = img;
+                    tryToProcess(tile);
+                });
+            }			
+
+			return tile;
+		},
+		
         isTemporal: function() {
             return this._layerInfo.date;
         }

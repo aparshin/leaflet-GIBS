@@ -55,7 +55,6 @@
 	if (typeof L.TileLayer.Canvas !== 'undefined') GIBSGridLayer = L.TileLayer.Canvas;
 	else GIBSGridLayer = L.GridLayer;
 		
-	// This doesn't work (test with MODIS layers). Might be an issue with createTile() missing?
     var GIBSLayerCanvas = GIBSGridLayer.extend({
         initialize: function(layerName, options) {
         
@@ -103,8 +102,33 @@
             img.crossOrigin = "anonymous";
             img.src = url;
         },
-        
 		
+		// Common code utilised by both drawTile and createTile
+		_tryToProcess: function(canvas, c_width, c_height, mainImg, maskImg, hasMask) {
+			var mainCtx = canvas.getContext('2d');
+			mainCtx.drawImage(mainImg, 0, 0);
+			
+			if (hasMask) {
+				var mainData = mainCtx.getImageData(0, 0, c_width, c_height);
+				
+				var maskCanvas = document.createElement('canvas');
+				maskCanvas.width = c_width;
+				maskCanvas.height = c_height;
+				
+				var maskCtx = maskCanvas.getContext('2d');
+				maskCtx.drawImage(maskImg, 0, 0);
+				
+				var maskPixels = maskCtx.getImageData(0, 0, c_width, c_height).data,
+					pixels = mainData.data;
+
+				for (var p = 0; p < maskPixels.length; p += 4) {
+					if (maskPixels[p+3]) pixels[p+3] = 0;
+				}
+				
+				mainCtx.putImageData(mainData, 0, 0);
+			}			
+		},
+        
 		// drawTile is only used by Leaflet 0.7x
 		// It is replaced with createTile in Leaflet 1.x
         drawTile: function(canvas, tilePoint, zoom) {
@@ -124,30 +148,8 @@
                         _this.tileDrawn(canvas);
                         return;
                     }
-                    
-                    var mainCtx = canvas.getContext('2d');
-                    mainCtx.drawImage(mainImg, 0, 0);
-                    
-                    if (hasMask) {
-                        var mainData = mainCtx.getImageData(0, 0, 256, 256);
-                        
-                        var maskCanvas = document.createElement('canvas');
-                        maskCanvas.width = maskCanvas.height = 256;
-                        
-                        var maskCtx = maskCanvas.getContext('2d');
-                        maskCtx.drawImage(maskImg, 0, 0);
-                        
-                        var maskPixels = maskCtx.getImageData(0, 0, 256, 256).data,
-                            pixels = mainData.data;
-                        for (var p = 0; p < maskPixels.length; p += 4) {
-                            if (maskPixels[p+3]) {
-                                pixels[p+3] = 0;
-                            }
-                        }
-                        
-                        mainCtx.putImageData(mainData, 0, 0);
-                    }
-                    
+					
+					_this._tryToProcess(canvas, 256, 256, mainImg, maskImg, hasMask);
                     _this.tileDrawn(canvas);
                 }
             }
@@ -189,33 +191,8 @@
 			
 			var tryToProcess = function(canvas) {
                 if (mainImg && (maskImg || !hasMask)) {
-                    if (mainImg.width !== canvas.width || (hasMask && maskImg.width !== canvas.width)) {
-                        return;
-                    }
-
-                    var mainCtx = canvas.getContext('2d');
-                    mainCtx.drawImage(mainImg, 0, 0);
-                    
-                    if (hasMask) {
-                        var mainData = mainCtx.getImageData(0, 0, canvas.width, canvas.height);
-                        
-                        var maskCanvas = document.createElement('canvas');
-                        maskCanvas.width = canvas.width;
-						maskCanvas.height = canvas.height;
-                        
-                        var maskCtx = maskCanvas.getContext('2d');
-                        maskCtx.drawImage(maskImg, 0, 0);
-                        
-                        var maskPixels = maskCtx.getImageData(0, 0, canvas.width, canvas.height).data,
-                            pixels = mainData.data;
-                        for (var p = 0; p < maskPixels.length; p += 4) {
-                            if (maskPixels[p+3]) {
-                                pixels[p+3] = 0;
-                            }
-                        }
-                        
-                        mainCtx.putImageData(mainData, 0, 0);
-                    }
+                    if (mainImg.width !== canvas.width || (hasMask && maskImg.width !== canvas.width)) return;
+					_this._tryToProcess(canvas, canvas.width, canvas.height, mainImg, maskImg, hasMask);
                 }
             }
            

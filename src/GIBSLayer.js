@@ -8,11 +8,12 @@
         }
 
         var dateStr = info.date ? date.getUTCFullYear() + '-' + s2(date.getUTCMonth() + 1) + '-' + s2(date.getUTCDate()) : "0";
+	    var zMax = (info.maxZoom && z > info.zoom) ? info.zoom : z;
 
         return L.Util.template(info.template, {
             Time: dateStr,
             TileMatrixSet: 'GoogleMapsCompatible_Level' + info.zoom,
-            TileMatrix: z,
+            TileMatrix: zMax,
             TileRow: y,
             TileCol: x
         });
@@ -22,7 +23,11 @@
         initialize: function(gibsID, options) {
             this._layerInfo = L.GIBS_LAYERS[gibsID];
             options = options || {};
-            options.maxZoom = this._layerInfo.zoom;
+	        if(options.maxZoom) {
+		        this._layerInfo.maxZoom = options.maxZoom;
+		        options.maxNativeZoom = this._layerInfo.zoom;
+	        }
+	        options.maxZoom = options.maxZoom || this._layerInfo.zoom;
             options.attribution = GIBS_ATTRIBUTION;
             this._date = options.date || null;
 

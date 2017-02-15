@@ -32,6 +32,7 @@ The following options can be set:
 |---|---|---|
 |`date`|`Date`|Date for multi-temporal products|
 |`transparent`|`Boolean`|Make no-data pixels of MODIS Multiband Imagery transparent|
+|`maxZoom`|`Number`|Set a zoom level greater than the tileset provides to show auto-scaled tiles where needed (uses [maxNativeZoom](http://leafletjs.com/reference-1.0.3.html#tilelayer-maxnativezoom))|
 
 **Note about `transparent` option.** GIBS Multiband Imagery layers use JPEG tiles without transparency (all no-data pixels are black). HTML Canvas and corresponding no-data layers are used to make no-data pixels transparent. It leads to additional requests to server and more computations in browser. So, use this option if you really need it!
 
